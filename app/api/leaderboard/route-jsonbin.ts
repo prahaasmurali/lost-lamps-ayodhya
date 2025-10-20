@@ -11,9 +11,9 @@ export interface LeaderboardEntry {
   date: string;
 }
 
-// Free JSONBin.io endpoint - replace with your credentials
-const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/672073dbacd3cb34a8a18e16'; // Replace with your bin ID
-const JSONBIN_API_KEY = '$2a$10$lQx.Q7Wd/wPf9gQK1ZxJSeUoHn2D5wGvI5rnqCyJBFXR1tF8OlhJy'; // Replace with your API key
+// Free JSONBin.io endpoint - create at https://jsonbin.io
+const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/YOUR_BIN_ID';
+const JSONBIN_API_KEY = '$2a$10$YOUR_API_KEY'; // Get from jsonbin.io
 
 async function readGlobalLeaderboard(): Promise<LeaderboardEntry[]> {
   try {
@@ -107,17 +107,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('POST /api/leaderboard error:', error);
     return NextResponse.json({ error: 'Failed to add entry' }, { status: 500 });
-  }
-}
-
-// DELETE - Clear leaderboard (admin function)
-export async function DELETE() {
-  try {
-    await writeGlobalLeaderboard([]);
-    return NextResponse.json({ message: 'Leaderboard cleared' });
-  } catch (error) {
-    console.error('DELETE /api/leaderboard error:', error);
-    return NextResponse.json({ error: 'Failed to clear leaderboard' }, { status: 500 });
   }
 }
 
