@@ -11,17 +11,24 @@ export interface LeaderboardEntry {
 export class LeaderboardManager {
   private static readonly API_BASE = '/api/leaderboard';
 
-  // Get all leaderboard entries from API
+  // Get all leaderboard entries from API or localStorage
   static async getLeaderboard(): Promise<LeaderboardEntry[]> {
     try {
       const response = await fetch(this.API_BASE);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      return await response.json();
+      const apiData = await response.json();
+      
+      // If API returns empty array (production mode), use localStorage
+      if (apiData.length === 0 && typeof window !== 'undefined') {
+        return this.getLocalLeaderboard();
+      }
+      
+      return apiData;
     } catch (error) {
-      console.error('Error reading leaderboard:', error);
-      return [];
+      console.error('Error reading leaderboard from API, using localStorage:', error);
+      return typeof window !== 'undefined' ? this.getLocalLeaderboard() : [];
     }
   }
 
@@ -64,6 +71,9 @@ export class LeaderboardManager {
         });
       }
 
+      // Also save to localStorage as backup
+      this.saveLocalLeaderboard(leaderboard);
+      
       return leaderboard;
     } catch (error) {
       console.error('Error adding to leaderboard:', error);
@@ -119,6 +129,27 @@ export class LeaderboardManager {
     }
   }
 
+  // LocalStorage backup methods for production deployment
+  static getLocalLeaderboard(): LeaderboardEntry[] {
+    try {
+      if (typeof window === 'undefined') return [];
+      const stored = localStorage.getItem('treasure_hunt_leaderboard_backup');
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Error reading localStorage leaderboard:', error);
+      return [];
+    }
+  }
+
+  static saveLocalLeaderboard(leaderboard: LeaderboardEntry[]): void {
+    try {
+      if (typeof window === 'undefined') return;
+      localStorage.setItem('treasure_hunt_leaderboard_backup', JSON.stringify(leaderboard));
+    } catch (error) {
+      console.error('Error saving localStorage leaderboard:', error);
+    }
+  }
+
   // Get top N entries
   static async getTopEntries(limit: number = 10): Promise<LeaderboardEntry[]> {
     const leaderboard = await this.getLeaderboard();
@@ -167,5 +198,20 @@ export class LeaderboardManager {
   static async exportData(): Promise<string> {
     const leaderboard = await this.getLeaderboard();
     return JSON.stringify(leaderboard, null, 2);
+  }
+
+  // Helper method to format time display
+  static formatTime(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    } else {
+      return `${secs}s`;
+    }
   }
 }

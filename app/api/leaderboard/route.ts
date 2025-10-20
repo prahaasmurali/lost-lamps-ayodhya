@@ -24,8 +24,12 @@ async function ensureLeaderboardFile() {
 }
 
 async function readLeaderboard(): Promise<LeaderboardEntry[]> {
-  await ensureLeaderboardFile();
   try {
+    // In production (Vercel), return empty array - client will use localStorage
+    if (process.env.NODE_ENV === 'production') {
+      return [];
+    }
+    await ensureLeaderboardFile();
     const data = await fs.readFile(LEADERBOARD_FILE, 'utf8');
     return JSON.parse(data);
   } catch (error) {
@@ -36,6 +40,11 @@ async function readLeaderboard(): Promise<LeaderboardEntry[]> {
 
 async function writeLeaderboard(leaderboard: LeaderboardEntry[]): Promise<void> {
   try {
+    // In production (Vercel), file writes won't work, so we'll just log
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Production mode: Leaderboard data would be saved:', leaderboard.length, 'entries');
+      return;
+    }
     await fs.writeFile(LEADERBOARD_FILE, JSON.stringify(leaderboard, null, 2));
   } catch (error) {
     console.error('Error writing leaderboard:', error);
